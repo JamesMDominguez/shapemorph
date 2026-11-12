@@ -60,7 +60,8 @@
     "build": "rm -rf dist && tsc -p tsconfig.build.json && node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "demo": "npm run build && node scripts/serve.mjs"
+    "demo": "npm run build && node scripts/serve.mjs",
+    "prepare": "npm run build"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",
