@@ -71,5 +71,13 @@
     "react-dom": "^19.3.1",
     "typescript": "^7.0.2",
     "vitest": "^5.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JamesMDominguez/shapemorph.git"
+  },
+  "homepage": "https://github.com/JamesMDominguez/shapemorph#readme",
+  "bugs": {
+    "url": "https://github.com/JamesMDominguez/shapemorph/issues"
   }
 }
