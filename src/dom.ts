@@ -19,6 +19,14 @@ import { easeInOutCubic, MORPH_MS, prefersReducedMotion, SETTLE_MS, SPIN_MS, spr
 import { LOADING, REST, shapes as library } from './shapes.js';
 
 export type MorphTarget = 'clip' | 'path';
+
+/**
+ * Whether this browser can morph an SVG path with CSS alone (a transition on
+ * the `d` property, as `shapes.css` sets up). Chromium and Firefox can;
+ * Safari and WKWebView cannot (checked on macOS 26.2), so use `morph()` there.
+ */
+export const supportsCSSPathMorph = (): boolean =>
+    typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('d', 'path("M0 0 L1 0 L1 1 Z")');
 type Target = HTMLElement | SVGElement;
 
 export interface DrawOptions {

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>shapemorph</title>
+<link rel="stylesheet" href="../dist/shapes.css">
+<style>
+  :root { color-scheme: light dark; --fg: #1c1b1f; --muted: #625b71; --bg: #fffbfe; --line: #e7e0ec; --accent: #6750a4; --soft: #eaddff; font: 15px/1.5 system-ui, -apple-system, sans-serif; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #e6e1e5; --muted: #cac4d0; --bg: #141218; --line: #2b2930; --accent: #d0bcff; --soft: #4f378b; } }
+  body { margin: 0; background: var(--bg); color: var(--fg); }
+  main { max-width: 960px; margin: 0 auto; padding: 48px 24px 96px; }
+  h1 { font-size: 32px; margin: 0 0 4px; letter-spacing: -0.02em; }
+  h2 { font-size: 15px; margin: 56px 0 16px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+  p { margin: 0; color: var(--muted); max-width: 60ch; }
+  code { font: 13px ui-monospace, Menlo, monospace; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+  .cell { all: unset; cursor: pointer; display: grid; justify-items: center; gap: 6px; padding: 12px 4px; border-radius: 16px; }
+  .cell:hover, .cell[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .cell:focus-visible { outline: 2px solid var(--accent); }
+  .cell svg { width: 56px; height: 56px; }
+  .cell path { fill: var(--accent); }
+  .cell span { font-size: 12px; color: var(--muted); }
+  .stage { display: grid; grid-template-columns: 240px 1fr; gap: 40px; align-items: center; }
+  #face { width: 240px; height: 240px; background: linear-gradient(135deg, var(--accent), #e8a0bf); }
+  .controls { display: grid; gap: 16px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+  input[type=range] { width: 260px; accent-color: var(--accent); }
+  button.b { font: inherit; border: 0; border-radius: 999px; padding: 10px 20px; background: var(--soft); color: var(--fg); cursor: pointer; }
+  button.b[aria-pressed="true"], button.b.primary { background: var(--accent); color: var(--bg); }
+  #send { width: 160px; height: 44px; }
+  .loaders { display: flex; gap: 32px; align-items: center; color: var(--accent); }
+  .badges { display: flex; gap: 16px; }
+  .badges svg { width: 64px; height: 64px; }
+  .badges path { fill: var(--accent); transition: d 400ms cubic-bezier(.3, 1.4, .5, 1); }
+  .support { font: 13px ui-monospace, Menlo, monospace; color: var(--muted); display: grid; gap: 2px; }
+  @media (max-width: 640px) { .stage { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>shapemorph</h1>
+  <p>Shapes in the style of Material 3 Expressive that morph point-for-point into one another. A framework-free core, plain DOM drivers, optional React hooks.</p>
+
+  <h2>Morph</h2>
+  <div class="stage">
+    <div id="face" role="img" aria-label="A shape that morphs"></div>
+    <div class="controls">
+      <div class="row" id="via">
+        <button class="b" aria-pressed="true" data-via="spring">Spring</button>
+        <button class="b" aria-pressed="false" data-via="tween">Tween</button>
+      </div>
+      <label>Stiffness <span id="k-out"></span><input id="k" type="range" min="100" max="1500" step="10" value="800"></label>
+      <label>Damping ratio <span id="z-out"></span><input id="z" type="range" min="0.2" max="1" step="0.05" value="0.6"></label>
+      <p>Pick a shape below. Pick another mid-morph: it carries on from the frame on screen.</p>
+    </div>
+  </div>
+
+  <h2>Library</h2>
+  <div class="grid" id="library"></div>
+
+  <h2>Busy</h2>
+  <div class="row" style="gap: 32px">
+    <button class="b primary" id="send">Send</button>
+    <div class="loaders" id="loaders"></div>
+  </div>
+
+  <h2>Hover morph (CSS where it can, JS in Safari)</h2>
+  <div class="badges" id="badges"></div>
+
+  <h2>This browser</h2>
+  <div class="support" id="support"></div>
+</main>
+
+<script type="module">
+  import { shapes, morph, setShape, loop, loaderSVG, SPRINGS, springCurve, supportsCSSPathMorph } from '../dist/shapemorph.min.js';
+
+  const $ = (id) => document.getElementById(id);
+  const NS = 'http://www.w3.org/2000/svg';
+  let via = 'spring';
+  const face = $('face');
+  setShape(face, shapes.cookie);
+
+  const k = $('k'), z = $('z');
+  const show = () => { $('k-out').textContent = k.value; $('z-out').textContent = z.value; };
+  k.oninput = z.oninput = show; show();
+  for (const b of $('via').querySelectorAll('button')) b.onclick = () => {
+    via = b.dataset.via;
+    for (const o of $('via').querySelectorAll('button')) o.setAttribute('aria-pressed', String(o === b));
+  };
+
+  const lib = $('library');
+  for (const name of Object.keys(shapes)) {
+    const cell = document.createElement('button');
+    cell.className = 'cell'; cell.setAttribute('aria-pressed', 'false');
+    const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 100 100');
+    const path = document.createElementNS(NS, 'path'); svg.append(path);
+    setShape(path, shapes[name]);
+    const label = document.createElement('span'); label.textContent = name;
+    cell.append(svg, label);
+    cell.onclick = () => {
+      for (const c of lib.children) c.setAttribute('aria-pressed', String(c === cell));
+      morph(face, shapes[name], { via, spring: { stiffness: +k.value, damping: +z.value } });
+    };
+    lib.append(cell);
+  }
+
+  // The busy button: its own silhouette becomes the loading shape.
+  const send = $('send');
+  let busy = null;
+  send.onclick = async () => {
+    if (busy) return;
+    send.textContent = '';
+    send.style.width = '44px';
+    busy = loop(send, { size: 44 });
+    await new Promise((r) => setTimeout(r, 2400));
+    await busy.rest(shapes.squircle);
+    busy.stop(); busy = null;
+    send.style.width = ''; send.textContent = 'Sent';
+    setTimeout(() => { send.textContent = 'Send'; }, 1200);
+  };
+
+  $('loaders').innerHTML = loaderSVG({ size: 48 }) + loaderSVG({ size: 32 }) + loaderSVG({ size: 24, spin: 0 });
+
+  for (const [a, b] of [['cookie', 'gem'], ['pentagon', 'flower'], ['clover', 'puffy'], ['sunny', 'squircle']]) {
+    $('badges').insertAdjacentHTML('beforeend', `<svg viewBox="0 0 100 100" data-a="${a}" data-b="${b}"><path data-sm-shape="${a}"/></svg>`);
+  }
+  // Where CSS can't animate `d` (Safari, WKWebView), the same hover runs on morph().
+  const css = supportsCSSPathMorph();
+  for (const svg of $('badges').children) {
+    const p = svg.firstChild, { a, b } = svg.dataset;
+    if (css) {
+      svg.onpointerenter = () => p.setAttribute('data-sm-shape', b);
+      svg.onpointerleave = () => p.setAttribute('data-sm-shape', a);
+    } else {
+      p.removeAttribute('data-sm-shape');
+      setShape(p, shapes[a]);
+      svg.onpointerenter = () => morph(p, shapes[b]);
+      svg.onpointerleave = () => morph(p, shapes[a]);
+    }
+  }
+
+  const yes = (v) => (v ? 'yes' : 'NO');
+  $('support').innerHTML = [
+    `CSS clip-path: path()            ${yes(CSS.supports('clip-path', "path('M0 0 L1 0 L1 1 Z')"))}`,
+    `CSS d: path() (CSS-only morphs)  ${yes(CSS.supports('d', 'path("M0 0 L1 0 L1 1 Z")'))}`,
+    `CSS linear() easing              ${yes(CSS.supports('transition-timing-function', 'linear(0, 1)'))}`,
+    `SVG SMIL (loader)                ${yes(typeof SVGAnimateElement !== 'undefined')}`,
+    `fastSpatial spring as CSS        ${springCurve(SPRINGS.fastSpatial).duration}ms`,
+  ].map((l) => `<div>${l.replace(/ /g, '&nbsp;')}</div>`).join('');
+</script>
+</body>
+</html>
