@@ -2,11 +2,23 @@
 
 Shapes in the style of Material 3 Expressive that morph point-for-point into one another, plus springs that keep the hand's momentum. The core has no framework, the DOM drivers are plain JavaScript, and the React hooks are optional. There are no runtime dependencies.
 
+<p align="center"><img src="docs/loader.svg" alt="The loading indicator morphing and turning, beside three shapes morphing from one library shape to the next" width="560"></p>
+
 - **About 40 named shapes**: cookies, clovers, sunny, gem, pentagon, arch, fan, ghost, heart, pixel shapes… and constructors for your own (`lobed`, `regular`, `polygon` with real rounded corners, `pill`, `squircle`, `ellipse`, `star`, `harmonic`, `pixel`).
 - **Any shape morphs into any other.** Every shape is sampled at the same 144 points, with winding and start point aligned, so a morph never crumples or spirals.
 - **Drivers for real elements.** They morph an element's own silhouette (`clip-path`) or an SVG path, by spring or tween. They can be interrupted mid-morph, the first frame is drawn synchronously, a timer finishes the morph if the tab is hidden, they honour `prefers-reduced-motion`, and they put back the element's own styles.
 - **A loader that needs no JavaScript per frame** (SVG SMIL).
 - **M3 Expressive spring tokens**, also available as CSS `linear()` easings.
+
+## The shapes
+
+<img src="docs/shapes.svg" alt="All the library's named shapes, from circle and squircle to cookies, clovers, gem, heart and pixel shapes" width="864">
+
+## A morph, frame by frame
+
+Cookie to gem to clover. Every outline has the same 144 points, so a morph moves each point straight to its partner.
+
+<img src="docs/morph.svg" alt="Frames of a cookie morphing into a gem and then into a clover" width="100%">
 
 ## Install
 
@@ -78,6 +90,10 @@ const { easing, duration } = springCurve(SPRINGS.defaultSpatial);   // for CSS t
 ## CSS-only morphs
 
 `shapemorph/shapes.css` declares `--sm-shape-<name>` for every shape. It also adds `[data-sm-shape="<name>"] { d: var(…) }`, so a `<path>` changes shape when its attribute changes and animates with a `transition: d …`. **Safari and WKWebView do not support CSS `d`.** Check `supportsCSSPathMorph()` and use `morph()` when it returns false. `shapeTokensCSS()` generates a custom set.
+
+## Pictures
+
+The pictures in this README are drawn by the library itself: `npm run build && npm run readme-images`.
 
 ## Browser support
 

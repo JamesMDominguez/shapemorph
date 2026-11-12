@@ -61,7 +61,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "demo": "npm run build && node scripts/serve.mjs",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "readme-images": "node scripts/readme-images.mjs"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",
