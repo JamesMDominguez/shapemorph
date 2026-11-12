@@ -65,7 +65,7 @@ interface State {
 }
 const states = new WeakMap<Target, State>();
 
-const isPath = (el: Target) => typeof SVGPathElement !== 'undefined' && el instanceof SVGPathElement;
+const isPath = (el: Target) => el.namespaceURI === 'http://www.w3.org/2000/svg' && el.localName === 'path';
 
 function geometry(el: Target, opts: DrawOptions) {
     const target: MorphTarget = opts.target ?? (isPath(el) ? 'path' : 'clip');
@@ -147,6 +147,7 @@ export function morph(el: Target, shape: Shape, opts: MorphOptions = {}): Morph 
         cancel = () => cancelAnimationFrame(raf);
         backstop = setTimeout(land, duration + 250);
     } else {
+        frame(0);
         cancel = spring({ from: 0, to: 1, ...(opts.spring ?? SPRINGS.fastSpatial), precision: 0.002, instant: false, onUpdate: frame, onDone: land });
         backstop = setTimeout(land, 2000);
     }
