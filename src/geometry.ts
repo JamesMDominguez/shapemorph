@@ -45,8 +45,12 @@ export type Shape =
     | { kind: 'star'; k: number; inner: number }
     /** A sum of cosines on the radius, `terms` as [lobes, depth, phase?]. */
     | { kind: 'harmonic'; terms: Array<[number, number, number?]> }
-    /** The classic parametric heart, point down. */
-    | { kind: 'heart' };
+    /**
+     * A heart, point down: the classic parametric heart with its dip and its
+     * point rounded. `round` is how much, as a share of the outline's length
+     * (0 keeps both sharp; default 0.035).
+     */
+    | { kind: 'heart'; round?: number };
 
 /** 144 divides evenly by 2, 3, 4, 6, 8, 9, 12 and 16, so lobes that many sample alike, and leaves 9+ points per lobe even at 16. */
 export const DEFAULT_POINTS = 144;
@@ -109,6 +113,25 @@ function resampleClosed(dense: Points, count: number): Points {
         out.push([a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]);
     }
     return out;
+}
+
+/**
+ * Round a closed outline's sharp points by averaging each point with its
+ * neighbours along the outline (a Gaussian `sigma` wide, as a share of the
+ * outline's length). The points must be evenly spaced. Smooth runs, like a
+ * heart's lobes, barely move; a cusp becomes a curve about `sigma` across.
+ */
+function smoothClosed(pts: Points, sigma: number): Points {
+    const n = pts.length, s = sigma * n;
+    if (!(s > 0.5)) return pts;
+    const reach = Math.ceil(s * 3);
+    const w = Array.from({ length: reach * 2 + 1 }, (_, i) => Math.exp(-((i - reach) ** 2) / (2 * s * s)));
+    const total = w.reduce((a, b) => a + b, 0);
+    return pts.map((_, i) => {
+        let x = 0, y = 0;
+        for (let j = -reach; j <= reach; j++) { const p = pts[(i + j + n) % n], k = w[j + reach]; x += p[0] * k; y += p[1] * k; }
+        return [x / total, y / total] as Point;
+    });
 }
 
 /** Shear, stretch, then centre on the bounding box and fit to the unit. */
@@ -197,7 +220,8 @@ export function samplePoints(shape: Shape, radius = 1, count = DEFAULT_POINTS): 
             const t = (i / 360) * Math.PI * 2;
             return [16 * Math.pow(Math.sin(t), 3), -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t))] as Point;
         });
-        return finish(resampleClosed(dense, count), {}).map(([x, y]) => [x * radius, y * radius]);
+        const even = smoothClosed(resampleClosed(dense, 1440), shape.round ?? 0.035);
+        return finish(resampleClosed(even, count), {}).map(([x, y]) => [x * radius, y * radius]);
     }
     if (shape.kind === 'star' || shape.kind === 'harmonic') {
         const unit = Array.from({ length: count }, (_, i) => {

@@ -20,7 +20,8 @@ export const squircle = (n = 4): Shape => ({ kind: 'squircle', n });
 export const ellipse = (ratio: number, rotation = 0): Shape => ({ kind: 'ellipse', ratio, rotation });
 export const star = (k: number, inner: number): Shape => ({ kind: 'star', k, inner });
 export const harmonic = (...terms: Array<[number, number, number?]>): Shape => ({ kind: 'harmonic', terms });
-export const heart = (): Shape => ({ kind: 'heart' });
+/** A heart; `round` rounds its dip and point (0 keeps them sharp). */
+export const heart = (round?: number): Shape => (round === undefined ? { kind: 'heart' } : { kind: 'heart', round });
 /** A pixel shape from rows of [left, right] cells, top row first. Drawn with straight lines; it can't morph smoothly. */
 export const pixel = (rows: Array<[number, number]>): Shape => ({ kind: 'polygon', flat: true, round: 0, vertices: pixelRows(rows) });
 /** A polygon from explicit vertices (any box; it is centred and fitted). */

@@ -123,3 +123,22 @@ describe('smooth outlines (regression: corners at the lobes’ shoulders)', () =
         expect(Math.max(...peaks) - Math.min(...peaks)).toBeLessThan(0.01);
     });
 });
+
+describe('heart', () => {
+    // Largest turn between neighbouring segments, in degrees: a sharp point
+    // turns most of the way round in one step.
+    const sharpest = (shape: Parameters<typeof sample>[0]) => {
+        const p = sample(shape, { points: 288 });
+        return Math.max(...p.map((a, i) => {
+            const b = p[(i + 1) % p.length], c = p[(i + 2) % p.length];
+            const t = Math.atan2(c[1] - b[1], c[0] - b[0]) - Math.atan2(b[1] - a[1], b[0] - a[0]);
+            return Math.abs(Math.atan2(Math.sin(t), Math.cos(t))) * 180 / Math.PI;
+        }));
+    };
+    it('has its dip and point rounded by default', () => {
+        expect(sharpest(shapes.heart)).toBeLessThan(15);
+    });
+    it('round: 0 keeps the classic sharp heart', () => {
+        expect(sharpest({ kind: 'heart', round: 0 })).toBeGreaterThan(40);
+    });
+});
