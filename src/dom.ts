@@ -41,7 +41,7 @@ export interface DrawOptions {
      * `viewBox="0 0 100 100"`).
      */
     size?: number;
-    /** Points per outline; every shape that morphs together needs the same count. Default 72. */
+    /** Points per outline; every shape that morphs together needs the same count. Default 144. */
     points?: number;
 }
 

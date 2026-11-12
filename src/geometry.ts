@@ -1,7 +1,7 @@
 /**
  * Shapes as pure geometry: no DOM, no framework.
  *
- * Every shape is sampled at the same number of points (72 by default), which
+ * Every shape is sampled at the same number of points (144 by default), which
  * is what lets any two be interpolated point-for-point without tearing.
  * Most shapes are a polar radius function; the rest (rounded polygons, the
  * heart) are outlines walked densely and resampled by arc length, so they
@@ -48,15 +48,25 @@ export type Shape =
     /** The classic parametric heart, point down. */
     | { kind: 'heart' };
 
-export const DEFAULT_POINTS = 72;
+/** 144 divides evenly by 2, 3, 4, 6, 8, 9, 12 and 16, so lobes that many sample alike, and leaves 9+ points per lobe even at 16. */
+export const DEFAULT_POINTS = 144;
 
 /** Whether a shape wants straight lines between its points (pixel shapes). */
 export const isFlat = (shape: Shape): boolean => shape.kind === 'polygon' && Boolean(shape.flat);
 
-const CLEFT = 1.6;
+// Wide petals, narrow clefts, smooth all the way round. u runs 0 (the bottom
+// of a cleft) to 1 (the top of a petal); a concave power of it holds the
+// petal up for most of the way and drops into the cleft late. The small
+// offset E keeps the power's slope finite at u = 0, so the cleft is a tight
+// round notch rather than a pinched point. (The profile this replaced,
+// f^0.55 above zero and −|f|^1.6 below, met at f = 0 with a vertical tangent
+// on one side and a flat one on the other: a visible corner at every
+// shoulder once a shape is drawn larger than an icon.)
+const PETAL = 0.6, E = 0.04;
+const E0 = Math.pow(E, PETAL), E1 = Math.pow(1 + E, PETAL) - E0;
 function lobedRadius(k: number, a: number, t: number): number {
-    const f = Math.cos(k * t);
-    return 1 + a * (f >= 0 ? Math.pow(f, 0.55) : -Math.pow(-f, CLEFT));
+    const u = (1 + Math.cos(k * t)) / 2;
+    return 1 + a * (2 * (Math.pow(u + E, PETAL) - E0) / E1 - 1);
 }
 
 // Distance along the ray at angle t to the edge of a stadium of half-length
@@ -242,7 +252,7 @@ export function alignOutline(points: Points): Points {
 export interface SampleOptions {
     /** Half the box the shape is fitted to. Default 1. */
     radius?: number;
-    /** How many points. Every shape that morphs together needs the same count. Default 72. */
+    /** How many points. Every shape that morphs together needs the same count. Default 144. */
     points?: number;
     /** Align winding and start point (see `alignOutline`). Default true. */
     align?: boolean;

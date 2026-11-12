@@ -3,7 +3,7 @@
 Shapes in the style of Material 3 Expressive that morph point-for-point into one another, plus springs that keep the hand's momentum. The core has no framework, the DOM drivers are plain JavaScript, and the React hooks are optional. There are no runtime dependencies.
 
 - **About 40 named shapes**: cookies, clovers, sunny, gem, pentagon, arch, fan, ghost, heart, pixel shapes… and constructors for your own (`lobed`, `regular`, `polygon` with real rounded corners, `pill`, `squircle`, `ellipse`, `star`, `harmonic`, `pixel`).
-- **Any shape morphs into any other.** Every shape is sampled at the same 72 points, with winding and start point aligned, so a morph never crumples or spirals.
+- **Any shape morphs into any other.** Every shape is sampled at the same 144 points, with winding and start point aligned, so a morph never crumples or spirals.
 - **Drivers for real elements.** They morph an element's own silhouette (`clip-path`) or an SVG path, by spring or tween. They can be interrupted mid-morph, the first frame is drawn synchronously, a timer finishes the morph if the tab is hidden, they honour `prefers-reduced-motion`, and they put back the element's own styles.
 - **A loader that needs no JavaScript per frame** (SVG SMIL).
 - **M3 Expressive spring tokens**, also available as CSS `linear()` easings.

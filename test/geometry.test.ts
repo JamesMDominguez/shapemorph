@@ -5,9 +5,9 @@ const entries = Object.entries(shapes);
 const area = (p: Array<[number, number]>) => p.reduce((s, [x, y], i) => { const [nx, ny] = p[(i + 1) % p.length]; return s + x * ny - nx * y; }, 0) / 2;
 
 describe('every library shape', () => {
-    it.each(entries)('%s: 72 finite points inside the box', (_, shape) => {
+    it.each(entries)('%s: 144 finite points inside the box', (_, shape) => {
         const pts = sample(shape, { radius: 50 });
-        expect(pts).toHaveLength(72);
+        expect(pts).toHaveLength(144);
         for (const [x, y] of pts) {
             expect(Number.isFinite(x) && Number.isFinite(y)).toBe(true);
             expect(Math.abs(x)).toBeLessThanOrEqual(50.01);
@@ -33,7 +33,7 @@ describe('every library shape', () => {
         expect(d.startsWith('M ')).toBe(true);
         expect(d.endsWith(' Z')).toBe(true);
         const cmds = d.match(/[CL]/g)!;
-        expect(cmds.length).toBe(isFlat(shape) ? 71 : 72);
+        expect(cmds.length).toBe(isFlat(shape) ? 143 : 144);
     });
 
     it('library paths are stable (snapshot)', () => {
@@ -49,7 +49,7 @@ describe('geometry', () => {
     it('the squircle touches the box at the sides and stays inside the corners', () => {
         const pts = samplePoints(REST, 1);
         expect(pts[0][0]).toBeCloseTo(1, 6);
-        const diag = pts[9]; // 45°
+        const diag = pts[18]; // 45°
         expect(diag[0]).toBeGreaterThan(Math.SQRT1_2);
         expect(diag[0]).toBeLessThan(1);
     });
@@ -99,5 +99,27 @@ describe('shapeForKey', () => {
         const i = IDENTITY.indexOf(shapeForKey('Timesheet'));
         expect(shapeForKey('Timesheet', 1)).toBe(IDENTITY[(i + 1) % IDENTITY.length]);
         expect(shapeForKey('a', 0, ['x', 'y'] as const)).toMatch(/^[xy]$/);
+    });
+});
+
+describe('smooth outlines (regression: corners at the lobes’ shoulders)', () => {
+    // Change in the radius's slope between neighbouring samples, relative to
+    // the samples' own spacing: a smooth curve changes slope a little at a
+    // time; a corner changes it all at once.
+    const kink = (k: number, a: number, n = 4000) => {
+        const r = sample({ kind: 'lobed', k, a }, { points: n, align: false }).map(([x, y]) => Math.hypot(x, y));
+        const slope = r.map((v, i) => (r[(i + 1) % n] - v) * n);
+        return Math.max(...slope.map((s, i) => Math.abs(slope[(i + 1) % n] - s)));
+    };
+    const lobedShapes = entries.filter(([, s]) => s.kind === 'lobed') as Array<[string, { kind: 'lobed'; k: number; a: number }]>;
+    it.each(lobedShapes)('%s has no corners', (_, s) => {
+        // Halving the spacing should not leave a jump behind: with a corner the
+        // slope change stays the same size however finely you sample.
+        expect(kink(s.k, s.a, 8000)).toBeLessThan(kink(s.k, s.a, 4000) * 0.75);
+    });
+    it.each(lobedShapes)('%s: every lobe comes out the same size', (_, s) => {
+        const radii = sample(s).map(([x, y]) => Math.hypot(x, y));
+        const peaks = radii.filter((r, i) => r >= radii[(i + 1) % radii.length] && r >= radii[(i - 1 + radii.length) % radii.length]);
+        expect(Math.max(...peaks) - Math.min(...peaks)).toBeLessThan(0.01);
     });
 });

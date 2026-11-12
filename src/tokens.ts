@@ -1,6 +1,6 @@
 /**
  * Shapes as CSS custom properties, for morphs the browser does on its own:
- * every smooth shape's path has the same run of commands (M, 72 × C, Z), so
+ * every smooth shape's path has the same run of commands (M, 144 × C, Z), so
  * CSS can interpolate `d` (or `clip-path`) between any two of them.
  */
 
