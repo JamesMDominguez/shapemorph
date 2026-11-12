@@ -56,6 +56,8 @@ export interface MorphOptions extends DrawOptions {
     easing?: (u: number) => number;
     /** Jump straight there. Default: the reduced-motion preference. */
     instant?: boolean;
+    /** Called on the frame the shape lands (not when stopped or replaced). */
+    onDone?: () => void;
 }
 
 export interface Morph {
@@ -133,6 +135,7 @@ export function morph(el: Target, shape: Shape, opts: MorphOptions = {}): Morph 
         clearTimeout(backstop);
         s.pts = to; s.stop = undefined;
         draw(el, to, g, isFlat(shape));
+        opts.onDone?.();
         resolve();
     };
     const frame = (u: number) => { s.pts = lerpPoints(from, to, u); draw(el, s.pts, g); };
@@ -245,8 +248,11 @@ export function settle(el: Target, { from = library.cookie4, to = REST, keep = f
     const g = geometry(el, opts);
     if (!(g.size > 1)) return Promise.resolve();
     setShape(el, from, opts);
-    const m = morph(el, to, { via: 'tween', duration: SETTLE_MS, ...opts, instant: false });
-    return m.finished.then(() => { if (!keep) restore(el); });
+    // Hand the element back on the frame the shape lands, not a microtask
+    // later, so nothing can paint (or test) the inline clip in between.
+    const done = opts.onDone;
+    const m = morph(el, to, { via: 'tween', duration: SETTLE_MS, ...opts, instant: false, onDone: () => { if (!keep) restore(el); done?.(); } });
+    return m.finished;
 }
 
 export interface LoaderOptions {

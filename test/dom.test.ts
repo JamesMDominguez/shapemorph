@@ -127,6 +127,12 @@ describe('settle', () => {
         await p;
         expect(el.style.clipPath).toBe('');
     });
+    it('hands the element back synchronously on the landing frame', () => {
+        const el = box(32);
+        void settle(el);
+        frames.run(100);
+        expect(el.style.clipPath).toBe('');
+    });
     it('keep: true leaves the final shape on', async () => {
         const el = box(32);
         const p = settle(el, { keep: true });
