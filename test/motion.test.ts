@@ -13,7 +13,7 @@ describe('spring', () => {
         const values: number[] = []; const done = vi.fn();
         spring({ from: 0, to: 100, ...SPRINGS.defaultSpatial, onUpdate: (v) => values.push(v), onDone: done });
         frames.run(120);
-        expect(values.at(-1)).toBe(100);
+        expect(values[values.length - 1]).toBe(100);
         expect(done).toHaveBeenCalledTimes(1);
         expect(frames.pending()).toBe(0);
     });
